@@ -4,9 +4,11 @@ import scalaj.http.Http
 
 class Requests(val marathonUrl:String, val marathonUsername:String, val marathonPassword:String) {
   private val credentials = s"$marathonUsername:$marathonPassword";
-  private val GROUP_PREFIX = "/selgrid-"
+  private val GROUP_NAME = "selgrid-"
+  private val GROUP_PREFIX = s"/$GROUP_NAME"
   private val GROUPS_API = s"$marathonUrl/v2/groups"
 
+  private def dnsNameHub(name:String, dnsSuffix: String) = s"$GROUP_NAME$name.$dnsSuffix";
   private def groupName(name:String) = GROUP_PREFIX + name;
   private def appNameHub(name:String) = groupName(name) + "/hub"
   private def appNameNode(name:String) = groupName(name) + "/node"
@@ -16,12 +18,12 @@ class Requests(val marathonUrl:String, val marathonUsername:String, val marathon
   private val HUB_MEM = 128
   private val RAM_PER_BROWSER = 128
 
-  def createGrid(name:String, nodes:Int, browsers: Int): DeploymentResponse = {
+  def createGrid(name:String, nodes:Int, browsers: Int, dnsSuffix: String): DeploymentResponse = {
     val response = Http(GROUPS_API)
       .auth(marathonUsername, marathonPassword)
       .method("POST")
       .param("force", "true")
-      .postData( Mapper.getJSON(createGroupRequest(name, nodes, browsers)) )
+      .postData( Mapper.getJSON(createGroupRequest(name, nodes, browsers, dnsSuffix)) )
       .asString
 
     return Mapper.parseJSON(response.body, Mapper.DEPLOYMENT_RESPONSE_TYPE)
@@ -37,7 +39,7 @@ class Requests(val marathonUrl:String, val marathonUsername:String, val marathon
     return Mapper.parseJSON(response.body, Mapper.DEPLOYMENT_RESPONSE_TYPE)
   }
 
-  private def createGroupRequest(name:String, nodes:Int, browsers: Int):Group = {
+  private def createGroupRequest(name:String, nodes:Int, browsers: Int, dnsSuffix: String):Group = {
     return Group(
       id=groupName(name),
       apps=List(
@@ -51,6 +53,10 @@ class Requests(val marathonUrl:String, val marathonUsername:String, val marathon
           env = Map(),
           healthChecks = List(
             new HealthCheck("HTTP", "/", 0, 120, 10, 20, 10)
+          ),
+          labels = Map(
+            "HAPROXY_GROUP" -> "external",
+            "HAPROXY_0_VHOST" -> dnsNameHub(name, dnsSuffix)
           )
         ),
         App(

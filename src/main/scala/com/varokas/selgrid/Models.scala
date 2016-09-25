@@ -52,7 +52,8 @@ case class App(
   val portDefinitions:List[PortDefinition],
   val env:Map[String, String] = new HashMap(),
   val healthChecks:List[HealthCheck] = List(),
-  val dependencies:List[String] = List()
+  val dependencies:List[String] = List(),
+  val labels:Map[String, String] = new HashMap()
 )
 extends MarathonRequest
 

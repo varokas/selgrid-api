@@ -33,5 +33,6 @@
     "timeoutSeconds" : 20,
     "maxConsecutiveFailures" : 3
   } ],
-  "dependencies" : [ ]
+  "dependencies" : [ ],
+  "labels" : { }
 }
